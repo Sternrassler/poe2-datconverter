@@ -3,7 +3,7 @@
 ## 1. Technology Stack
 
 - **Language**: Go (Golang)
-- **Version**: Latest stable (1.23+)
+- **Version**: 1.24.0
 - **Type**: CLI Application
 
 ## 2. Architecture & Patterns
@@ -39,4 +39,31 @@
 
 ## 6. Agent Configuration
 
-- **Permissions**: WebSearch is allowed.
+
+## 7. Versionierung & Changelog
+
+- **Changelog**: Alle Änderungen müssen im `CHANGELOG.md` dokumentiert werden.
+- **Version**: Die Versionsnummer wird ausschließlich in der Datei `VERSION` gepflegt.
+
+## 8. Build & Extraction
+
+- **Tool**: `make` (Targets: `extract-data`, `build-extractor`).
+- **Docker**: Image `poe-export` (based on `Sternrassler/ooz`).
+- **Input**: `extracted/` directory.
+
+## 9. Error Handling
+
+- **Startup**: Fail fast (`log.Fatalf`) for critical config/path errors.
+- **Processing**: Log & Continue (`log.Printf`) for individual file errors.
+
+## 10. Project Structure
+
+- `extracted/`: Input game data (Gitignored).
+- `internal/`: Private application logic.
+- `cmd/`: Application entry points.
+
+
+## 11. Development Methodology
+
+- **TDD (Test Driven Development)**: Wir entwickeln Test-Driven. Zuerst der Test, dann der Code.
+- **Clean Code**: Wir befolgen Clean Code Prinzipien (Sprechende Namen, kleine Funktionen, Single Responsibility).

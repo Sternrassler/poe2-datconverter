@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"bufio"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -12,7 +13,15 @@ import (
 type ItFile struct {
 	Version string
 	Extends string
-	Content string // Full decoded text
+	Root    *Node
+}
+
+// Node represents a node in the metadata tree.
+type Node struct {
+	Key      string  `json:"key,omitempty"`
+	Value    string  `json:"value,omitempty"`
+	Children []*Node `json:"children,omitempty"`
+	Parent   *Node   `json:"-"`
 }
 
 // Read parses a .it file from the given reader.
@@ -39,25 +48,77 @@ func Read(r io.Reader) (*ItFile, error) {
 
 	text := string(utf16.Decode(u16s))
 
+	return ParseText(text)
+}
+
+// ParseText parses the decoded text content of a .it file.
+func ParseText(text string) (*ItFile, error) {
 	itFile := &ItFile{
-		Content: text,
+		Root: &Node{},
 	}
 
-	// Simple parsing of header fields
-	lines := strings.Split(text, "\n")
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
+	scanner := bufio.NewScanner(strings.NewReader(text))
+	currentNode := itFile.Root
+
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "//") {
+			continue
+		}
+
 		if strings.HasPrefix(line, "version") {
 			parts := strings.Fields(line)
 			if len(parts) >= 2 {
-				itFile.Version = parts[1]
+				itFile.Version = strings.Trim(parts[1], "\"")
 			}
-		} else if strings.HasPrefix(line, "extends") {
+			continue
+		}
+
+		if strings.HasPrefix(line, "extends") {
 			parts := strings.Fields(line)
 			if len(parts) >= 2 {
 				itFile.Extends = strings.Trim(parts[1], "\"")
 			}
+			continue
 		}
+
+		if line == "{" {
+			// Start new block
+			newNode := &Node{Parent: currentNode}
+			currentNode.Children = append(currentNode.Children, newNode)
+			currentNode = newNode
+			continue
+		}
+
+		if line == "}" {
+			// End block
+			if currentNode.Parent != nil {
+				currentNode = currentNode.Parent
+			}
+			continue
+		}
+
+		// Key = Value
+		if idx := strings.Index(line, "="); idx != -1 {
+			key := strings.TrimSpace(line[:idx])
+			value := strings.TrimSpace(line[idx+1:])
+			value = strings.Trim(value, "\"")
+
+			child := &Node{
+				Key:    key,
+				Value:  value,
+				Parent: currentNode,
+			}
+			currentNode.Children = append(currentNode.Children, child)
+			continue
+		}
+
+		// Just a key or directive? Treat as key with empty value
+		child := &Node{
+			Key:    line,
+			Parent: currentNode,
+		}
+		currentNode.Children = append(currentNode.Children, child)
 	}
 
 	return itFile, nil

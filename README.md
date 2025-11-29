@@ -119,7 +119,17 @@ Attribute werden verwendet, um Referenztypen zu markieren:
    cd poe2-datconverter
    ```
 
-2. **`Config.cs` mit deinen Pfaden bearbeiten:**
+2. **Spieldaten extrahieren**
+
+   Das Projekt enthält Tools zur Extraktion der Daten aus der PoE2-Installation mittels Docker:
+
+   ```bash
+   make extract-data
+   ```
+
+   Details siehe [docs/EXTRACTION.md](docs/EXTRACTION.md).
+
+3. **`Config.cs` mit deinen Pfaden bearbeiten:**
 
    - `ExtractedFilesPath`: Pfad zu extrahierten Spieldateien
    - `DataOutputPath`: Ausgabepfad für konvertierte JSON-Dateien

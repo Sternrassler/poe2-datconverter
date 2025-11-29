@@ -157,25 +157,41 @@ func (f *DatFile) ReadString(offset int) (string, error) {
 
 func (f *DatFile) readStringAt(offset int) (string, error) {
 	if offset >= len(f.DataVariable) {
-		return "", nil // Empty string or invalid?
+		return "", nil
 	}
 
-	// Scan for null terminator (4 bytes of zeros)
-	// dat2json uses 4 bytes terminator.
-	// But strings are UTF-16LE.
+	// dat2json logic:
+	// 1. Find 4-byte null terminator (0x00 0x00 0x00 0x00)
+	// 2. Ensure (end - offset) is even (UTF-16 alignment)
 
-	var u16s []uint16
-	for i := offset; i < len(f.DataVariable); i += 2 {
-		if i+2 > len(f.DataVariable) {
+	terminator := []byte{0, 0, 0, 0}
+	end := offset
+
+	for {
+		idx := bytes.Index(f.DataVariable[end:], terminator)
+		if idx == -1 {
+			// No terminator found, return what we have? Or error?
+			// For now, let's assume the string goes to the end if no terminator found (shouldn't happen in valid files)
+			end = len(f.DataVariable)
 			break
 		}
-		val := binary.LittleEndian.Uint16(f.DataVariable[i : i+2])
-		if val == 0 {
-			// Check if next uint16 is also 0 to satisfy 4-byte terminator?
-			// For now, let's stop at first null character.
+
+		foundAt := end + idx
+		// Check alignment: The string length (foundAt - offset) must be even for UTF-16
+		if (foundAt-offset)%2 == 0 {
+			end = foundAt
 			break
 		}
-		u16s = append(u16s, val)
+
+		// If not aligned, continue searching after the first byte of the found sequence
+		end = foundAt + 1
+	}
+
+	// Decode UTF-16LE
+	stringBytes := f.DataVariable[offset:end]
+	u16s := make([]uint16, len(stringBytes)/2)
+	for i := 0; i < len(u16s); i++ {
+		u16s[i] = binary.LittleEndian.Uint16(stringBytes[i*2 : i*2+2])
 	}
 
 	return string(utf16.Decode(u16s)), nil

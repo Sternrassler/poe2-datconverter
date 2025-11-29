@@ -27,38 +27,7 @@ flowchart TD
 
 Die Spieldaten von Path of Exile 2 liegen **nicht direkt lesbar** vor, sondern sind in **komprimierten Bundle-Archiven** (.bundle.bin) gespeichert.
 
-**PoE2-Installation (Steam unter Linux):**
-
-```text
-~/.steam/debian-installation/steamapps/common/Path of Exile 2/
-└── Bundles2/
-    ├── _.index.bin
-    ├── Folders/
-    │   ├── metadata.bundle.bin              # Metadata-Archiv
-    │   ├── metadata/
-    │   │   ├── items.bundle.bin             # .it Dateien
-    │   │   ├── statdescriptions.bundle.bin  # .csd Dateien
-    │   │   └── ...
-    │   ├── 00/data.datc64.bundle.bin        # .datc64 Archive
-    │   ├── 04/data.datc64.bundle.bin
-    │   └── ... (weitere Hex-Ordner)
-    └── ...
-```
-
-**Extraktions-Schritte:**
-
-1. **Bundle-Extractor verwenden:**
-   - LibGGPK2 (für PoE1, könnte mit PoE2 funktionieren): <https://github.com/aianlinb/LibGGPK2>
-   - PyPoE (Python-basiert): <https://github.com/OmegaK2/PyPoE>
-   - Community-Tools für PoE2 (noch in Entwicklung)
-
-2. **Bundles extrahieren nach:** z.B. `/home/user/PoE2/Extracted/`
-
-3. **Config.cs anpassen:**
-
-   ```csharp
-   public const string ExtractedFilesPath = @"/home/user/PoE2/Extracted";
-   ```
+**Detaillierte Anleitung zur Extraktion:** Siehe [docs/EXTRACTION.md](EXTRACTION.md).
 
 **Nach erfolgreicher Extraktion liegt folgende Struktur vor:**
 
@@ -75,23 +44,20 @@ ExtractedFilesPath/
     └── ...
 ```
 
-### Konfigurierte Pfade (Config.cs)
+### Konfigurierte Pfade (internal/config/config.go)
 
-Das Projekt verwendet fünf konfigurierbare Pfade:
+Das Projekt verwendet konfigurierbare Pfade:
 
-```text
-ExtractedFilesPath   = "F:\PoE2\Extracted"          # Eingabe: Extrahierte Spieldateien
-DataOutputPath       = "F:\PoE2\PoEData"            # Ausgabe: Mit RowIndex
-RepoDataOutputPath   = "F:\PoE2\DataRepo"           # Ausgabe: Ohne RowIndex
-RawDataOutputPath    = "F:\PoE2\RawData"            # Ausgabe: Rohdaten (optional)
-ModelsOutputPath     = "F:\PoE2\Development\...\GameModels"  # Ausgabe: Generierte C# Modelle
+```go
+ExtractedFilesPath   = "./extracted"          // Eingabe: Extrahierte Spieldateien
+// ... weitere Pfade
 ```
 
 ### Detaillierte Eingabe-Verzeichnisstruktur
 
 ```mermaid
 graph TB
-    Root["ExtractedFilesPath<br/>(F:\PoE2\Extracted)"]
+    Root["ExtractedFilesPath<br/>(./extracted)"]
 
     Root --> Meta["metadata/<br/>Spiel-Metadaten"]
     Root --> Data["data/<br/>Haupt-Datentabellen"]
@@ -123,11 +89,13 @@ graph TB
 **Speicherort:** `ExtractedFilesPath/metadata/**/*.it` (rekursiv)
 
 **Charakteristik:**
+
 - Textformat mit Key-Value-Paaren
 - Vererbungshierarchie via `extends`
 - Verschachtelte Strukturen mit `{ }` Blöcken
 
 **Beispiel-Pfade:**
+
 ```text
 metadata/items/weapons/bows/bow_base.it
 metadata/monsters/act1/zombie.it
@@ -136,6 +104,7 @@ metadata/terrains/acts/act1_town.it
 ```
 
 **Beispiel-Inhalt:**
+
 ```text
 extends "metadata/items/weapons/weapon_base"
 
@@ -147,6 +116,7 @@ base_item_type = "Bow"
 ```
 
 **Verarbeitung:**
+
 - Alle `.it` Dateien werden rekursiv gefunden: `Directory.GetFiles(..., "*.it", SearchOption.AllDirectories)`
 - Von `MetadataParser.Parse()` geparst
 - Vererbung wird durch `MetadataParser.Merge()` aufgelöst
@@ -157,12 +127,14 @@ base_item_type = "Bow"
 **Speicherort:** `ExtractedFilesPath/metadata/**/*.csd` (rekursiv)
 
 **Charakteristik:**
+
 - Unicode-Textformat
 - Beschreibungen für Stat-IDs
 - Operator-basierte Formatierung
 - Parameter mit Werten
 
 **Beispiel-Pfade:**
+
 ```text
 metadata/stat_descriptions.csd
 metadata/skill_stat_descriptions.csd
@@ -170,6 +142,7 @@ metadata/passive_skill_stat_descriptions.csd
 ```
 
 **Beispiel-Inhalt:**
+
 ```text
 description
 2 increased_damage fire_damage
@@ -182,6 +155,7 @@ no_description some_internal_stat
 ```
 
 **Verarbeitung:**
+
 - Alle `.csd` Dateien werden rekursiv gefunden
 - Von `CsdParser.Parse()` geparst (Unicode Encoding)
 - IDs, Descriptions, Operators und Parameter werden extrahiert
@@ -192,12 +166,14 @@ no_description some_internal_stat
 **Speicherort:** `ExtractedFilesPath/data/*.datc64` (nur Top-Level)
 
 **Charakteristik:**
+
 - Binärformat
 - Sprach-neutrale Spielmechanik-Daten
 - Feste Zeilen-Struktur + variable Datensektion
 - Enthält numerische IDs, Flags, Referenzen
 
 **Beispiel-Dateien:**
+
 ```text
 Characters.datc64              # Charakter-Klassen (Warrior, Ranger, etc.)
 SkillGems.datc64              # Skill-Gems und ihre Eigenschaften
@@ -212,6 +188,7 @@ ChanceableItemClasses.datc64  # Chance-bare Items
 ```
 
 **Verarbeitung:**
+
 - Nur Top-Level-Dateien: `Directory.GetFiles(dataFilesPath, "*.datc64", SearchOption.TopDirectoryOnly)`
 - Von `ReaderFactory.GetReader()` und `DatReader.Read()` geparst
 - Memory-Marshal zu C# Structs
@@ -223,12 +200,14 @@ ChanceableItemClasses.datc64  # Chance-bare Items
 **Speicherort:** `ExtractedFilesPath/data/{language}/*.datc64`
 
 **Charakteristik:**
+
 - Gleiche Binärstruktur wie Haupt-Tabellen
 - Enthalten übersetzte Strings
 - Gleiche Tabellen-Namen wie Hauptdaten
 - RowIndex korrespondiert zu Hauptdaten
 
 **Sprach-Ordner:**
+
 ```text
 data/English/      # Englische Übersetzungen
 data/German/       # Deutsche Übersetzungen
@@ -244,6 +223,7 @@ data/TraditionalChinese/  # Traditionelles Chinesisch
 ```
 
 **Beispiel-Dateien pro Sprache:**
+
 ```text
 data/English/Characters.datc64        # Charakter-Namen in Englisch
 data/German/Characters.datc64         # Charakter-Namen in Deutsch
@@ -252,6 +232,7 @@ data/German/SkillGems.datc64         # Skill-Namen/-Beschreibungen (DE)
 ```
 
 **Verarbeitung:**
+
 - Sprach-Ordner werden dynamisch erkannt: `Directory.GetDirectories(Path.Combine(Config.ExtractedFilesPath, "data"))`
 - Nur beim Repository-Update: Jede Sprache wird separat verarbeitet
 - Ausgabe: `RepoDataOutputPath/data/{language}/`
@@ -362,7 +343,7 @@ graph TB
 
 - **Null-Wert**: `0xFEFEFEFEFEFEFEFE` (8 Bytes)
 - **Separator**: `0xBBBBBBBBBBBBBBBB` (8 Bytes)
-- **String-Terminator**: `[0, 0, 0, 0]` (Unicode null)
+- **String-Terminator**: `[0, 0, 0, 0]` (4 Bytes null) - Muss 2-Byte aligned relativ zum String-Start sein
 
 ## 3. DATC64 Verarbeitungs-Pipeline
 

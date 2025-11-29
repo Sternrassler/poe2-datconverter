@@ -52,7 +52,7 @@ func ConvertToJSON(data interface{}, outputPath string) error {
 		output = map[string]interface{}{
 			"version": v.Version,
 			"extends": v.Extends,
-			"content": v.Content,
+			"root":    v.Root,
 		}
 	case *csd.CsdFile:
 		output = map[string]interface{}{
