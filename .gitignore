@@ -399,3 +399,5 @@ FodyWeavers.xsd
 
 nuget.config
 secrets.json
+
+/tmp

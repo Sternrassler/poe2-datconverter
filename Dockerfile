@@ -1,0 +1,12 @@
+FROM poe-export
+
+RUN apt update
+RUN apt install git curl -y
+
+# ImageMagick
+WORKDIR /imei
+RUN git clone --depth=1 https://github.com/SoftCreatR/imei .
+RUN chmod +x imei.sh
+RUN ./imei.sh
+
+WORKDIR /workspace
