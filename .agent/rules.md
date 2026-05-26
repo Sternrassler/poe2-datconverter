@@ -43,7 +43,7 @@
 ## 7. Versionierung & Changelog
 
 - **Changelog**: Alle Änderungen müssen im `CHANGELOG.md` dokumentiert werden.
-- **Version**: Die Versionsnummer wird ausschließlich in der Datei `VERSION` gepflegt.
+- **Version**: Die Versionsnummer wird ausschließlich über `CHANGELOG.md` (oberster `## [X.Y.Z]`-Eintrag) und Git-Tags (`vX.Y.Z`) als Single Source of Truth gepflegt. Es gibt keine separate `VERSION`-Datei.
 
 ## 8. Build & Extraction
 
